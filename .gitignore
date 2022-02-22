@@ -6,6 +6,8 @@ bin-release/
 
 # Other files and folders
 .settings/
+BMC-Dataset
+workspace.code-workspace
 
 # Executables
 *.swf
