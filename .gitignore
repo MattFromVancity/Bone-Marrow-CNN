@@ -8,6 +8,8 @@ bin-release/
 .settings/
 BMC-Dataset
 workspace.code-workspace
+.DS_Store
+*pycache*
 
 # Executables
 *.swf
