@@ -7,7 +7,9 @@ import os
 import numpy as np
 from tensorflow import keras
 import cv2
+import skimage
 import math
+import random
 
 TRAIN_PATH_ABS = os.path.abspath("train_filenames.txt")
 DATASET_PATH_ABS = os.path.abspath("BMC-Dataset")
@@ -54,20 +56,31 @@ class DataGenerator(keras.utils.Sequence):
         batch_of_labels = self.Y_set[idx*self.batch_size:(idx+1)*self.batch_size]
 
         batch_X = list()
-        batch_Y = list()
         # load batch of images
         for filepath in batch_of_filenames:
             abs_filepath = os.path.join(DATASET_PATH_ABS, filepath)
             try:
-                image_tx = cv2.imread(abs_filepath, cv2.IMREAD_COLOR)
-                b,g,r = cv2.split(image_tx)
-                img = cv2.merge((r,g,b))
-                image_data = img * (1/255)
+                img = skimage.io.imread(abs_filepath)
+                image_data = img / 255.00
                 batch_X.append(image_data)
             except:
                 print(abs_filepath)
-        # load label data
-        for label in batch_of_labels:
-            batch_Y.append(keras.utils.to_categorical(label, self.class_count))
 
-        return (np.array([ img for img in batch_X]), np.array([label for label in batch_Y]))
+        return (np.array([ img for img in batch_X]), keras.utils.to_categorical(batch_of_labels, num_classes= self.class_count))
+
+# testing of Data Generator class
+if __name__ == "__main__":
+    # open training filenames
+    with open('train_filenames.txt') as train_fd:
+        train_filenames = [f_name.strip('\n') for f_name in train_fd.readlines()]
+        random.shuffle(train_filenames)
+    # associated labels mapped to integer values
+    train_labels = [LABEL_DICT[f_name.split('/')[0]] for f_name in train_filenames]
+
+    data_gen = DataGenerator(train_filenames, train_labels, batch_size= 32)
+    batch_x, batch_y = data_gen[0]
+    # numpy array of three 250 x 250 channels
+    print(batch_x[0])
+    # result should be one hot encoded
+    print(batch_y[0])
+    print(train_filenames[0])
