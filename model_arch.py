@@ -3,6 +3,7 @@
 # author: mbwhiteh@sfu.ca
 # date: 2022-02-22
 
+from gc import callbacks
 from tensorflow import keras
 from keras.models import Sequential
 from keras.layers import Activation
@@ -37,6 +38,8 @@ batch_size = 32
 lr = 0.002
 epohcs = 5
 
+initializer = keras.initializers.HeNormal()
+
 # training data generator
 train_datagen = DataUtil.DataGenerator(train_fnames, train_labels, batch_size)
 # testing data generator
@@ -44,16 +47,13 @@ test_datagen = DataUtil.DataGenerator(test_fnames, test_labels, batch_size)
 
 # Start of model definition
 model = Sequential()
-model.add(Conv2D(512, (3, 3), input_shape=(250, 250, 3)))
+model.add(Conv2D(256, (3, 3), input_shape=(250, 250, 3), kernel_initializer= initializer))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3, 3)))
-model.add(Conv2D(256, (3, 3)))
+model.add(Conv2D(128, (3, 3), kernel_initializer= initializer))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3, 3)))
-model.add(Conv2D(128, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(3, 3)))
-model.add(Conv2D(64, (3, 3)))
+model.add(Conv2D(64, (3, 3), ))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(3, 3), padding="same"))
 model.add(Flatten())  # this produces a 1D feature vector
@@ -72,4 +72,10 @@ model.compile(loss='categorical_crossentropy',
 
 model.summary()
 
-model.fit(train_datagen, batch_size = batch_size, epochs= epohcs)
+batch_logger = DataUtil.BatchLogger('./training_stats/batch_log.csv')
+
+model.fit(train_datagen, batch_size = batch_size, epochs= epohcs, 
+    validation_data= test_datagen, callbacks= [batch_logger], use_multiprocessing= True)
+
+# save the model
+model.save('prelim_cnn.h5')

@@ -37,6 +37,17 @@ LABEL_DICT = {
     'PMO': 19,
     'BLA': 20}
 
+# Record metrics after each batch
+class BatchLogger(keras.callbacks.Callback):
+    def __init__(self, log_filename= None):
+        self.log_filename = log_filename
+    def on_batch_end(self, batch, logs= None):
+        if( (batch % 5) == 0):
+            with open(self.log_filename, 'a+') as fd:
+                fd.write('{}, {}, {} \n'.format(batch, logs['loss'], logs['categorical_accuracy']))
+    def on_epoch_end(self, epoch, logs= None):
+        self.log_filename = "{}_{}.csv".format(self.log_filename.strip('.csv'), epoch)
+
 # Data Generator class for batch training 
 class DataGenerator(keras.utils.Sequence):
     
