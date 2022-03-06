@@ -72,7 +72,7 @@ Returns:
     (train_set, test_set) - a tuple of lists storing testing and training dataset filenames.
 """
 def GenerateTrainTestFilenames(dataset_path, train_test_split):
-    classnames = os.listdir(dataset_path)
+    classnames = ["BLA", "LYT", "NGB", "NGS"]
     train_set = list()
     test_set = list()
     for classname in classnames:
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     datapath = os.path.join(os.path.abspath("./"), DATASET_NAME)
     # RenameNSort(datapath)
     # DatasetStats(datapath, 'dataset_stats.csv')
-    train_filenames, test_filenames = GenerateTrainTestFilenames(datapath, 0.7)
+    train_filenames, test_filenames = GenerateTrainTestFilenames(datapath, 0.9)
     # write both training and testing filenames to text file
     with open('train_filenames.txt', 'w+') as train_fd:
         train_fd.writelines([ f_name + '\n' for f_name in train_filenames ])

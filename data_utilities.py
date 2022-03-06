@@ -15,27 +15,11 @@ TRAIN_PATH_ABS = os.path.abspath("train_filenames.txt")
 DATASET_PATH_ABS = os.path.abspath("BMC-Dataset")
 # Dataset label mappings for one-hot encoding
 LABEL_DICT = {
-    'ABE': 0,
-    'ART': 1,
-    'BAS': 2,
-    'EBO': 3,
-    'EOS': 4,
-    'FGC': 5,
-    'HAC': 6,
-    'KSC': 7,
-    'LYI': 8,
-    'LYT': 9,
-    'MMZ': 10,
-    'MON': 11,
-    'MYB': 12,
-    'NGB': 13,
-    'NGS': 14,
-    'NIF': 15,
-    'OTH': 16,
-    'PEB': 17,
-    'PLM': 18,
-    'PMO': 19,
-    'BLA': 20}
+    'BLA': 0,
+    'LYT': 1,
+    'NGB': 2,
+    'NGS': 3
+}
 
 # Record metrics after each batch
 class BatchLogger(keras.callbacks.Callback):
@@ -46,12 +30,12 @@ class BatchLogger(keras.callbacks.Callback):
             with open(self.log_filename, 'a+') as fd:
                 fd.write('{}, {}, {} \n'.format(batch, logs['loss'], logs['categorical_accuracy']))
     def on_epoch_end(self, epoch, logs= None):
-        self.log_filename = "{}_{}.csv".format(self.log_filename.strip('.csv'), epoch)
+        self.log_filename = "{}_{}.csv".format(self.log_filename.strip(f'_{epoch-1}.csv'), epoch)
 
 # Data Generator class for batch training 
 class DataGenerator(keras.utils.Sequence):
     
-    def __init__(self, X_set, Y_set, batch_size= 32, num_classes= 21):
+    def __init__(self, X_set, Y_set, batch_size, num_classes):
         self.X_set = X_set
         self.Y_set = Y_set
         self.batch_size = batch_size
