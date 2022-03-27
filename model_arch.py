@@ -3,14 +3,17 @@
 # author: mbwhiteh@sfu.ca
 # date: 2022-02-22
 
+from asyncio import FastChildWatcher
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Activation, BatchNormalization
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.regularizers import L2
 
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
 from tensorflow.keras.layers import Activation, Dropout, Flatten, Dense
-from tensorflow.keras.metrics import CategoricalAccuracy
+from tensorflow.keras.metrics import CategoricalAccuracy, CategoricalCrossentropy, Precision, Recall, FalseNegatives, TruePositives
 
 import data_utilities as DataUtil
 import random
@@ -18,13 +21,13 @@ import math
 import os 
 
 OUTPUT_CLASSES = 4
-MODEL_CHECKPOINTS_FP = os.path.abspath('./tmp/model_weights.hdf5')
+MODEL_CHECKPOINTS_FP = os.path.abspath('./tmp/MV3_Weights_20220326.hdf5')
 
 # High Level Parameters
 batch_size = 32
-lr = 0.001
-beta_1 = 0.8
-epochs = 5
+lr = 0.003
+beta_1 = 0.9
+epochs = 50
 train_valid_split = 0.2
 
 # set the seed
@@ -58,20 +61,29 @@ validation_datagen = DataUtil.DataGenerator(train_fnames[0:valid_n], train_label
 test_datagen = DataUtil.DataGenerator(test_fnames, test_labels, batch_size, OUTPUT_CLASSES)
 
 # Start of model definition
-model = Sequential()
-model.add(Conv2D(256, (5, 5), input_shape=(250, 250, 3), kernel_initializer= initializer))
+model = Sequential(name= "7_Layer_Regularization_20220321")
+model.add(Conv2D(256, (3, 3), input_shape=(64, 64, 3), kernel_initializer= initializer))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(3, 3)))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(256, (3, 3), kernel_initializer= initializer))
+model.add(BatchNormalization())
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Conv2D(128, (3, 3), kernel_initializer= initializer))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(3, 3)))
-model.add(Conv2D(64, (3, 3), ))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(128, (3, 3), kernel_initializer= initializer))
+model.add(BatchNormalization())
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(3, 3), padding="same"))
+model.add(AveragePooling2D(pool_size=(2, 2)))
 model.add(Flatten())  # this produces a 1D feature vector
-model.add(Dense(32))
+model.add(Dense(64, kernel_initializer= initializer))
 model.add(Activation('relu'))
-model.add(Dropout(0.50))
+model.add(Dense(32, kernel_initializer= initializer))
+model.add(Activation('relu'))
+model.add(Dropout(0.40))
 model.add(Dense(OUTPUT_CLASSES))
 model.add(Activation('softmax'))
 
@@ -80,14 +92,25 @@ opt = keras.optimizers.Adam(
     learning_rate=lr,
     beta_1=beta_1
 )
-
 model.compile(loss='categorical_crossentropy',
               optimizer= opt,
-              metrics=[keras.metrics.CategoricalCrossentropy(), keras.metrics.CategoricalAccuracy()])
+              metrics=[
+                  CategoricalCrossentropy(),
+                  CategoricalAccuracy(),
+                  Recall(thresholds=0.50, class_id=0, name='bla-recall'),
+                  Recall(thresholds=0.50, class_id=1, name='lyt-recall'),
+                  Recall(thresholds=0.50, class_id=2, name='ngb-recall'),
+                  Recall(thresholds=0.50, class_id=3, name='ngs-recall'),
+                  Precision(thresholds=0.50, class_id=0, name='bla-precision'),
+                  Precision(thresholds=0.50, class_id=1, name='lyt-precision'),
+                  Precision(thresholds=0.50, class_id=2, name='ngb-precision'),
+                  Precision(thresholds=0.50, class_id=3, name='ngs-precision')
+                  ])
 
 model.summary()
 
-batch_logger_cb = DataUtil.BatchLogger(os.path.abspath("./training_stats/run1.csv"))
+batch_logger_cb = DataUtil.BatchLogger(os.path.abspath("./Stats/Train_Stats/MV3-20220326.csv"))
+early_stopping_cb = EarlyStopping('val_loss', patience=10)
 
 model_save_cb = keras.callbacks.ModelCheckpoint(
     filepath= MODEL_CHECKPOINTS_FP,
@@ -102,16 +125,15 @@ hist = model.fit(
     batch_size = batch_size, 
     epochs= epochs, 
     validation_data= validation_datagen, 
-    callbacks= [batch_logger_cb]
+    callbacks= [batch_logger_cb, model_save_cb, early_stopping_cb]
 )
 print(hist.history)
 
 # save the model
 model.load_weights(MODEL_CHECKPOINTS_FP)
+model.save('./Models/MV3-20220326.hdf5')
 
 testing_results = model.evaluate(
     x= test_datagen,
-    batch_size= batch_size,    
+    batch_size= batch_size
 )
-
-print(testing_results)

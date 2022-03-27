@@ -6,8 +6,7 @@
 import os
 import numpy as np
 from tensorflow import keras
-import cv2
-import skimage
+from PIL import Image
 import math
 import random
 
@@ -25,12 +24,10 @@ LABEL_DICT = {
 class BatchLogger(keras.callbacks.Callback):
     def __init__(self, log_filename= None):
         self.log_filename = log_filename
-    def on_batch_end(self, batch, logs= None):
-        if( (batch % 5) == 0):
-            with open(self.log_filename, 'a+') as fd:
-                fd.write('{}, {}, {} \n'.format(batch, logs['loss'], logs['categorical_accuracy']))
-    def on_epoch_end(self, epoch, logs= None):
-        self.log_filename = "{}_{}.csv".format(self.log_filename.strip(f'_{epoch-1}.csv'), epoch)
+
+    def on_epoch_end(self, batch, logs= None):
+        with open(self.log_filename, 'a+') as fd:
+            fd.write('{}\n'.format(logs))
 
 # Data Generator class for batch training 
 class DataGenerator(keras.utils.Sequence):
@@ -55,11 +52,11 @@ class DataGenerator(keras.utils.Sequence):
         for filepath in batch_of_filenames:
             abs_filepath = os.path.join(DATASET_PATH_ABS, filepath)
             try:
-                img = skimage.io.imread(abs_filepath)
-                image_data = img / 255.00
+                img = keras.utils.load_img(abs_filepath, target_size=(64,64))
+                image_data = keras.utils.img_to_array(img)*(1/255)
                 batch_X.append(image_data)
             except:
-                print(abs_filepath)
+                print(f'File {abs_filepath} failed to load.')
 
         return (np.array([ img for img in batch_X]), keras.utils.to_categorical(batch_of_labels, num_classes= self.class_count))
 
