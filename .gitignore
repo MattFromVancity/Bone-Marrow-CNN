@@ -7,6 +7,12 @@ bin-release/
 # Other files and folders
 .settings/
 BMC-Dataset
+Augmented_Data
+tmp
+Sorted-Dataset
+Resources
+Optimizer_Trials
+Stats
 workspace.code-workspace
 .DS_Store
 *pycache*
